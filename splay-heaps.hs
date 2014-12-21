@@ -1,45 +1,48 @@
-data Tree a = Empty | Node (Tree a) a (Tree a) deriving(Show,Eq)
+data SplayHeap a = SEmpty
+                 | SNode (SplayHeap a) a (SplayHeap a) deriving(Show,Eq)
 
-insert :: (Eq a,Show a,Ord a) => a -> Tree a -> Tree a
-insert x t = Node (smaller x t) x (bigger x t)
+insert :: (Eq a,Show a,Ord a) => a -> SplayHeap a -> SplayHeap a
+insert x t = SNode (smaller x t) x (bigger x t)
 
-bigger :: (Eq a,Show a,Ord a) => a -> Tree a -> Tree a
-bigger pivot Empty = Empty
-bigger pivot (Node a x b) =
+bigger :: (Eq a,Show a,Ord a) => a -> SplayHeap a -> SplayHeap a
+bigger pivot SEmpty = SEmpty
+bigger pivot (SNode a x b) =
         if x <= pivot
             then bigger pivot b
             else case a of
-                     Empty -> Node Empty x b
-                     Node ll y lr -> if y <= pivot
-                                         then Node (bigger pivot lr) x b
-                                         else Node (bigger pivot ll) y (Node lr x b)
+                     SEmpty -> SNode SEmpty x b
+                     SNode ll y lr -> if y <= pivot
+                                         then SNode (bigger pivot lr) x b
+                                         else SNode (bigger pivot ll) y (SNode lr x b)
 
-smaller :: (Eq a,Show a,Ord a) => a -> Tree a -> Tree a
-smaller pivot Empty = Empty
-smaller pivot (Node a x b) =
+smaller :: (Eq a,Show a,Ord a) => a -> SplayHeap a -> SplayHeap a
+smaller pivot SEmpty = SEmpty
+smaller pivot (SNode a x b) =
         if x > pivot
             then smaller pivot a
             else case b of
-                     Empty -> Node a x Empty
-                     Node rl y rr -> if y > pivot
-                                         then Node a x (smaller pivot rl)
-                                         else Node (Node a x rl) y (smaller pivot rr)
+                     SEmpty -> SNode a x SEmpty
+                     SNode rl y rr -> if y > pivot
+                                         then SNode a x (smaller pivot rl)
+                                         else SNode (SNode a x rl) y (smaller pivot rr)
 
-findMin :: (Eq a,Show a,Ord a) => Tree a -> a
-findMin (Node Empty x b) = x
-findMin (Node a x b) = findMin a
+findMin :: (Eq a,Show a,Ord a) => SplayHeap a -> Maybe a
+findMin SEmpty = Nothing
+findMin (SNode SEmpty x b) = Just x
+findMin (SNode a x b) = findMin a
 
-deleteMin :: (Eq a,Show a,Ord a) => Tree a -> Tree a
-deleteMin (Node Empty x b) = b
-deleteMin (Node (Node Empty x b) y c) = Node b y c
-deleteMin (Node (Node a x b) y c) = Node (deleteMin a) x (Node b y c)
+deleteMin :: (Eq a,Show a,Ord a) => SplayHeap a -> SplayHeap a
+deleteMin (SNode SEmpty x b) = b
+deleteMin (SNode (SNode SEmpty x b) y c) = SNode b y c
+deleteMin (SNode (SNode a x b) y c) = SNode (deleteMin a) x (SNode b y c)
 
-fromList :: (Eq a,Show a,Ord a) => [a] -> Tree a
-fromList = foldr insert Empty
+fromList :: (Eq a,Show a,Ord a) => [a] -> SplayHeap a
+fromList = foldr insert SEmpty
 
-toList :: (Eq a,Show a,Ord a) => Tree a -> [a]
-toList Empty = []
-toList t = (findMin t):(toList $ deleteMin t)
+toList :: (Eq a,Show a,Ord a) => SplayHeap a -> [a]
+toList t = case findMin t of
+               Nothing -> []
+               Just x -> x:(toList $ deleteMin t)
 
 main :: IO ()
 main = do putStrLn $ "Sorting: " ++ show [0..10]
@@ -51,4 +54,3 @@ main = do putStrLn $ "Sorting: " ++ show [0..10]
           putStrLn $ "Sorting: " ++ show [1,3,5,7,9,2,4,6,8,10,0]
           let t3 = fromList [1,3,5,7,9,2,4,6,8,10,0]
           print $ toList t3
-          
